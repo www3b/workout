@@ -1,0 +1,24 @@
+<?php
+
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\UsersController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+
+// Public routes (no authentication required)
+Route::post('/register', [AuthController::class, 'register'])->middleware([]);
+Route::post('/login', [AuthController::class, 'login'])->middleware([]);
+
+    Route::get('/users', [UsersController::class, 'index']);
+// Protected routes (require authentication)
+Route::middleware(['auth:sanctum'])->group(function () {
+    // Users
+    // User profile
+    Route::get('/user', [AuthController::class, 'profile']);
+    Route::put('/user', [AuthController::class, 'updateProfile']);
+    Route::post('/user/change-password', [AuthController::class, 'changePassword']);
+
+    // Logout
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/logout-all', [AuthController::class, 'logoutAll']);
+});

@@ -1,0 +1,67 @@
+services:
+  workspace:
+    build:
+      context: ./docker/workspace
+    container_name: workout-workspace
+    working_dir: /var/www/html
+    volumes:
+      - ./src:/var/www/html
+    depends_on:
+      - mysql
+    tty: true
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/node/Dockerfile
+    container_name: workout-node
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./src/frontend:/app
+      - frontend_node_modules:/app/node_modules
+    environment:
+      - API_BASE_URL=http://nginx/api
+      - NUXT_PUBLIC_API_BASE=http://localhost:8080/api
+      - NUXT_HOST=0.0.0.0
+    depends_on:
+      - nginx
+
+  php-fpm:
+    build:
+      context: ./docker/php-fpm
+    container_name: workout-php
+    working_dir: /var/www/html
+    volumes:
+      - ./src:/var/www/html
+    depends_on:
+      - mysql
+
+  nginx:
+    image: nginx:alpine
+    container_name: workout-nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./src:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - php-fpm
+
+  mysql:
+    image: mysql:8.0
+    container_name: workout-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: workout
+      MYSQL_USER: workout
+      MYSQL_PASSWORD: workout
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:
+  frontend_node_modules:

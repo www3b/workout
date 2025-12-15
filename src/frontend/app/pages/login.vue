@@ -15,17 +15,14 @@
 </template>
 
 <script setup lang="ts">
+import LoginForm from '~/components/auth/LoginForm.vue'
+
+const { loggedIn } = useUserSession()
+
 // Redirect if already authenticated
-import {useAuth} from "~~/app/composables/useAuth";
-import LoginForm from "~/components/auth/LoginForm.vue";
-
-const { isAuthenticated, initializeAuth } = useAuth()
-const router = useRouter()
-
-onMounted(() => {
-  initializeAuth()
-  if (isAuthenticated.value) {
-    router.push('/dashboard')
+watchEffect(() => {
+  if (loggedIn.value) {
+    navigateTo('/dashboard')
   }
 })
 </script>

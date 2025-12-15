@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {h, resolveComponent} from "vue";
 import type {TableColumn} from '@nuxt/ui'
+import {useApiFetch} from "~/composables/useApiFetch";
 
 type User = {
   id: number;
@@ -15,7 +16,8 @@ definePageMeta({
 
 const UButton = resolveComponent('UButton');
 
-const {data, pending} = useApiFetch<User[], 'users'>('/users');
+const { $api } = useNuxtApp();
+const {data, pending} = useApiFetch<{users: User[]}>('/users');
 
 const columns: TableColumn<User>[] = [
   {
@@ -61,7 +63,7 @@ const columns: TableColumn<User>[] = [
 
 const addUser = async () => {
   try {
-    const response = await $fetch('/users', {
+    const response = await $api('/users', {
       method: 'POST',
       body: {
         name: 'John Doe',

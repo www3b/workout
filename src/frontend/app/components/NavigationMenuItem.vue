@@ -1,12 +1,12 @@
 <template>
   <div v-if="item.divider">
-    <UDivider class="my-2" />
+    <USeparator class="my-2" />
   </div>
-  
+
   <div v-else class="navigation-item">
     <UButton
       :variant="isItemActive ? 'solid' : 'ghost'"
-      :color="isItemActive ? 'primary' : 'gray'"
+      :color="isItemActive ? 'primary' : 'neutral'"
       :disabled="item.disabled"
       size="sm"
       class="w-full justify-start"
@@ -15,9 +15,9 @@
       <template v-if="item.icon" #leading>
         <UIcon :name="item.icon" class="w-4 h-4" />
       </template>
-      
+
       <span class="flex-1 text-sm">{{ item.title }}</span>
-      
+
       <template v-if="item.badge" #trailing>
         <UBadge
           :color="item.badgeColor || 'primary'"
@@ -25,7 +25,7 @@
           size="xs"
         />
       </template>
-      
+
       <template v-if="item.children && item.children.length > 0" #trailing>
         <UIcon
           :name="isExpanded ? 'i-heroicons-chevron-down' : 'i-heroicons-chevron-right'"
@@ -34,7 +34,7 @@
         />
       </template>
     </UButton>
-    
+
     <!-- Submenu -->
     <div
       v-if="item.children && isExpanded"
@@ -72,7 +72,7 @@ const route = useRoute()
 // Check if item is active
 const isItemActive = computed(() => {
   if (props.item.isActive !== undefined) return props.item.isActive
-  
+
   if (props.item.to) {
     if (typeof props.item.to === 'string') {
       return route.path === props.item.to || route.path.startsWith(props.item.to + '/')
@@ -81,7 +81,7 @@ const isItemActive = computed(() => {
       return route.path === props.item.to.path || route.path.startsWith(props.item.to.path + '/')
     }
   }
-  
+
   return false
 })
 

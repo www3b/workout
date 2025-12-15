@@ -1,3 +1,28 @@
+<script setup lang="ts">
+/**
+ * Protected dashboard page.
+ * Demonstrates nuxt-auth-utils session usage.
+ */
+definePageMeta({
+  middleware: 'auth',
+})
+
+const { user, loggedIn, logout, getProfile } = useAuth()
+
+const refreshUserData = async () => {
+  try {
+    await getProfile()
+  } catch (error) {
+    console.error('Failed to refresh user profile:', error)
+  }
+}
+
+const handleLogout = async () => {
+  await logout()
+  await navigateTo('/login')
+}
+</script>
+
 <template>
   <div class="min-h-screen bg-gray-50">
     <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -16,7 +41,7 @@
           </template>
           <div class="space-y-2 text-sm">
             <p><strong>User data:</strong> {{ JSON.stringify(user, null, 2) }}</p>
-            <p><strong>Is authenticated:</strong> {{ isAuthenticated }}</p>
+            <p><strong>Is authenticated:</strong> {{ loggedIn }}</p>
           </div>
         </UCard>
 
@@ -61,49 +86,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-// This middleware will protect the route
-definePageMeta({
-  middleware: 'auth'
-})
-
-import {useAuth} from "~~/app/composables/useAuth";
-
-const { user, logout, initializeAuth, getProfile, token, isAuthenticated } = useAuth()
-const router = useRouter()
-
-// Initialize auth state when component mounts
-onMounted(async () => {
-  console.log('Dashboard mounted')
-  initializeAuth()
-
-  console.log('After initializeAuth:', { token: token.value, user: user.value })
-
-  // If user data is not available, fetch it from the API
-  if (!user.value) {
-    console.log('No user data, fetching from API...')
-    try {
-      await getProfile()
-      console.log('After getProfile:', user.value)
-    } catch (error) {
-      console.error('Failed to fetch user profile:', error)
-    }
-  }
-})
-
-const refreshUserData = async () => {
-  console.log('Manual refresh triggered')
-  try {
-    await getProfile()
-    console.log('After manual refresh:', user.value)
-  } catch (error) {
-    console.error('Failed to refresh user profile:', error)
-  }
-}
-
-const handleLogout = async () => {
-  await logout()
-  router.push('/login')
-}
-</script>

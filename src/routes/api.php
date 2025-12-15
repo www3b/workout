@@ -9,13 +9,14 @@ use Illuminate\Support\Facades\Route;
 Route::post('/register', [AuthController::class, 'register'])->middleware([]);
 Route::post('/login', [AuthController::class, 'login'])->middleware([]);
 
-    Route::get('/users', [UsersController::class, 'index']);
 // Protected routes (require authentication)
 Route::middleware(['auth:sanctum'])->group(function () {
     // Users
+    Route::get('/users', [UsersController::class, 'index']);
     // User profile
     Route::get('/user', [AuthController::class, 'profile']);
     Route::put('/user', [AuthController::class, 'updateProfile']);
+//    Route::post('/user', [AuthController::class, 'updateProfile']);
     Route::post('/user/change-password', [AuthController::class, 'changePassword']);
 
     // Logout

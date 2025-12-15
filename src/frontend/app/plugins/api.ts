@@ -1,16 +1,20 @@
+/**
+ * API plugin providing authenticated $fetch instance.
+ * Routes requests through server proxy to include auth token from session.
+ */
 export default defineNuxtPlugin((nuxtApp) => {
-    const config = useRuntimeConfig()
+  const api = $fetch.create({
+    baseURL: '/api/proxy',
+    async onResponseError({ response }) {
+      if (response.status === 401) {
+        await nuxtApp.runWithContext(() => navigateTo('/login'))
+      }
+    },
+  })
 
-    const apiFetch = $fetch.create({
-        baseURL: import.meta.server
-            ? config.apiBase : config.public.apiBase,
-
-        credentials: 'include',
-    })
-
-    return {
-        provide: {
-            api: apiFetch
-        }
-    }
+  return {
+    provide: {
+      api,
+    },
+  }
 })

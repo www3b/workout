@@ -1,241 +1,194 @@
+import type { User } from '#auth-utils'
+
+/**
+ * Authentication composable using nuxt-auth-utils.
+ * Provides a clean interface for authentication operations
+ * with secure cookie-based sessions.
+ */
 export const useAuth = () => {
-  const config = useRuntimeConfig()
-  const user = ref<Record<string, any>|null>(null)
-  const token = ref<string|null>(null)
+  const { loggedIn, user, session, fetch: fetchSession, clear } = useUserSession()
+
   const loading = ref(false)
-  const error = ref(null)
+  const error = ref<string | null>(null)
 
-  // Helper function to store auth data
-  const storeAuthData = (response: Record<string, any>) => {
-    token.value = response.access_token
-    user.value = response.user
-    console.log('User data fetched from API:', response.user)
-
-    if (import.meta.client) {
-      localStorage.setItem('auth_token', response.access_token)
-      localStorage.setItem('auth_user', JSON.stringify(response.user))
-    }
-  }
-
-  // Initialize auth state from localStorage
-  const initializeAuth = () => {
-    if (import.meta.client) {
-      const storedToken = localStorage.getItem('auth_token')
-      const storedUser = localStorage.getItem('auth_user')
-
-      if (storedToken) {
-        token.value = storedToken
-      }
-      if (storedUser) {
-        try {
-          user.value = JSON.parse(storedUser)
-          console.log('User data loaded from localStorage:', user.value)
-        } catch (error) {
-          console.error('Failed to parse stored user data:', error)
-          localStorage.removeItem('auth_user')
-        }
-      }
-    }
-  }
-
-  // Register new user
-  const register = async (credentials: { name: string; email: string; password: string; password_confirmation: string }) => {
+  /**
+   * Register a new user account.
+   */
+  const register = async (credentials: {
+    name: string
+    email: string
+    password: string
+    password_confirmation: string
+  }) => {
     loading.value = true
     error.value = null
 
     try {
-      const response = await $fetch<Record<string, any>>(`${config.public.apiBase}/register`, {
+      const response = await $fetch<{ success: boolean; user: User }>('/api/auth/register', {
         method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        body: credentials
+        body: credentials,
       })
 
-      // Store token and user
-      storeAuthData(response)
+      // Refresh session to get updated user data
+      await fetchSession()
 
       return response
-
     } catch (err: any) {
-      error.value = err.message || 'Registration failed'
+      error.value = err.data?.message || err.statusMessage || 'Registration failed'
       throw err
     } finally {
       loading.value = false
     }
   }
 
-  // Login user
+  /**
+   * Login with email and password.
+   */
   const login = async (credentials: { email: string; password: string }) => {
     loading.value = true
     error.value = null
 
     try {
-      const response = await $fetch<Record<string, any>>(`${config.public.apiBase}/login`, {
+      const response = await $fetch<{ success: boolean; user: User }>('/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        body: credentials
+        body: credentials,
       })
 
-      // Store token and user
-      storeAuthData(response)
+      // Refresh session to get updated user data
+      await fetchSession()
 
       return response
     } catch (err: any) {
-      error.value = err.data?.message || 'Login failed'
+      error.value = err.data?.message || err.statusMessage || 'Login failed'
       throw err
     } finally {
       loading.value = false
     }
   }
 
-  // Logout user
+  /**
+   * Logout the current user.
+   */
   const logout = async () => {
     loading.value = true
     error.value = null
 
     try {
-      if (token.value) {
-        await $fetch<Record<string, any>>(`${config.public.apiBase}/logout`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token.value}`,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          }
-        })
-      }
+      await $fetch('/api/auth/logout', { method: 'POST' })
+      await clear()
     } catch (err: any) {
       console.error('Logout error:', err)
+      // Still clear local session even if API call fails
+      await clear()
     } finally {
-      // Clear auth state regardless of API call success
-      token.value = null
-      user.value = null
-
-      if (import.meta.client) {
-        localStorage.removeItem('auth_token')
-        localStorage.removeItem('auth_user')
-      }
-
       loading.value = false
     }
   }
 
-  // Get user profile
+  /**
+   * Fetch fresh user profile from the server.
+   */
   const getProfile = async () => {
-    if (!token.value) return null
+    if (!loggedIn.value) return null
 
     loading.value = true
     error.value = null
 
     try {
-      const response = await $fetch<Record<string, any>>(`${config.public.apiBase}/user`, {
-        headers: {
-          'Authorization': `Bearer ${token.value}`,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
-      })
+      const response = await $fetch<{ user: User }>('/api/auth/user')
 
-      user.value = response.user
-      console.log('User data fetched from API:', response.user)
-
-      if (import.meta.client) {
-        localStorage.setItem('auth_user', JSON.stringify(response.user))
-      }
+      // Refresh session to get updated user data
+      await fetchSession()
 
       return response
     } catch (err: any) {
-      error.value = err.data?.message || 'Failed to get profile'
+      error.value = err.data?.message || err.statusMessage || 'Failed to get profile'
       throw err
     } finally {
       loading.value = false
     }
   }
 
-  // Update profile
+  /**
+   * Update user profile information.
+   */
   const updateProfile = async (data: { name?: string; email?: string }) => {
-    if (!token.value) throw new Error('Not authenticated')
+    if (!loggedIn.value) throw new Error('Not authenticated')
 
     loading.value = true
     error.value = null
 
     try {
-      const response = await $fetch<Record<string, any>>(`${config.public.apiBase}/user`, {
+      const response = await $fetch<{ success: boolean; user: User }>('/api/auth/user', {
         method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token.value}`,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        body: data
+        body: data,
       })
 
-      user.value = response.user
-      console.log('User data fetched from API:', response.user)
-
-      if (import.meta.client) {
-        localStorage.setItem('auth_user', JSON.stringify(response.user))
-      }
+      // Refresh session to get updated user data
+      await fetchSession()
 
       return response
     } catch (err: any) {
-      error.value = err.data?.message || 'Failed to update profile'
+      error.value = err.data?.message || err.statusMessage || 'Failed to update profile'
       throw err
     } finally {
       loading.value = false
     }
   }
 
-  // Change password
+  /**
+   * Change user password. User will be logged out after success.
+   */
   const changePassword = async (data: { current_password: string; password: string }) => {
-    if (!token.value) throw new Error('Not authenticated')
+    if (!loggedIn.value) throw new Error('Not authenticated')
 
     loading.value = true
     error.value = null
 
     try {
-      const response = await $fetch<Record<string, any>>(`${config.public.apiBase}/user/change-password`, {
+      const response = await $fetch<{ success: boolean; message: string }>('/api/auth/change-password', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token.value}`,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        body: data
+        body: data,
       })
 
-      // Logout user after password change as required by backend
-      await logout()
+      // Session is cleared by the server
+      await fetchSession()
 
       return response
     } catch (err: any) {
-      error.value = err.data?.message || 'Failed to change password'
+      error.value = err.data?.message || err.statusMessage || 'Failed to change password'
       throw err
     } finally {
       loading.value = false
     }
   }
-
-  // Check if user is authenticated
-  const isAuthenticated = computed(() => !!token.value)
 
   return {
-    user: readonly(user),
-    token: readonly(token),
+    /** Current user data (null if not logged in) */
+    user,
+    /** Whether the user is currently authenticated */
+    loggedIn,
+    /** Alias for loggedIn for backward compatibility */
+    isAuthenticated: loggedIn,
+    /** Current session data */
+    session,
+    /** Loading state for async operations */
     loading: readonly(loading),
+    /** Error message from the last failed operation */
     error: readonly(error),
-    isAuthenticated,
-    initializeAuth,
+    /** Register a new user */
     register,
+    /** Login with credentials */
     login,
+    /** Logout the current user */
     logout,
+    /** Fetch fresh user profile */
     getProfile,
+    /** Update user profile */
     updateProfile,
-    changePassword
+    /** Change user password */
+    changePassword,
+    /** Refresh session from server */
+    fetchSession,
   }
 }

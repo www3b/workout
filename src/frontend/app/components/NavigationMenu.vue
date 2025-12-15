@@ -53,7 +53,7 @@
     </template>
     
     <template #divider>
-      <UDivider class="my-2" />
+      <USeparator class="my-2" />
     </template>
   </UNavigationMenu>
 </template>

@@ -6,23 +6,23 @@
       </template>
 
       <UForm :state="form" :validate="validate" @submit="handleSubmit">
-        <UFormGroup label="Email" name="email" class="mb-4">
+        <UFormField label="Email" name="email" class="mb-4">
           <UInput
             v-model="form.email"
             type="email"
             placeholder="Enter your email"
             :disabled="loading"
           />
-        </UFormGroup>
+        </UFormField>
 
-        <UFormGroup label="Password" name="password" class="mb-6">
+        <UFormField label="Password" name="password" class="mb-6">
           <UInput
             v-model="form.password"
             type="password"
             placeholder="Enter your password"
             :disabled="loading"
           />
-        </UFormGroup>
+        </UFormField>
 
         <UAlert
           v-if="error"
@@ -61,14 +61,11 @@
 </template>
 
 <script setup lang="ts">
-import {useAuth} from "~~/app/composables/useAuth";
-
 const { login, loading, error } = useAuth()
-const router = useRouter()
 
 const form = reactive({
   email: '',
-  password: ''
+  password: '',
 })
 
 const validate = (state: typeof form) => {
@@ -81,8 +78,8 @@ const validate = (state: typeof form) => {
 const handleSubmit = async () => {
   try {
     await login(form)
-    await router.push('/dashboard')
-  } catch (err) {
+    await navigateTo('/dashboard')
+  } catch {
     // Error is handled by the useAuth composable
   }
 }

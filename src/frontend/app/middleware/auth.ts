@@ -1,11 +1,11 @@
-export default defineNuxtRouteMiddleware((to, from) => {
-  const { isAuthenticated, initializeAuth } = useAuth()
+/**
+ * Authentication middleware using nuxt-auth-utils.
+ * Protects routes that require authentication.
+ */
+export default defineNuxtRouteMiddleware(() => {
+  const { loggedIn } = useUserSession()
 
-  // Initialize auth state before checking authentication
-  initializeAuth()
-
-  // Small delay to ensure state is updated
-  if (!isAuthenticated.value) {
+  if (!loggedIn.value) {
     return navigateTo('/login')
   }
 })

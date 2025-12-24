@@ -1,9 +1,5 @@
 <template>
-  <div v-if="item.divider">
-    <USeparator class="my-2" />
-  </div>
-
-  <div v-else class="navigation-item">
+  <div class="navigation-item">
     <UButton
       :variant="isItemActive ? 'solid' : 'ghost'"
       :color="isItemActive ? 'primary' : 'neutral'"
@@ -16,11 +12,10 @@
         <UIcon :name="item.icon" class="w-4 h-4" />
       </template>
 
-      <span class="flex-1 text-sm">{{ item.title }}</span>
+      <span class="flex-1 text-sm">{{ item.label }}</span>
 
       <template v-if="item.badge" #trailing>
         <UBadge
-          :color="item.badgeColor || 'primary'"
           :label="typeof item.badge === 'number' && item.badge > 99 ? '99+' : item.badge"
           size="xs"
         />
@@ -42,7 +37,7 @@
     >
       <NavigationMenuItem
         v-for="child in item.children"
-        :key="child.id"
+        :key="child.value || child.label"
         :item="child"
         :level="level + 1"
         @click="$emit('click', child)"
@@ -52,7 +47,7 @@
 </template>
 
 <script setup lang="ts">
-import type { NavigationMenuItem } from '~/composables/useNavigationMenu'
+import type { NavigationMenuItem } from '@nuxt/ui'
 
 interface Props {
   item: NavigationMenuItem
@@ -71,14 +66,15 @@ const route = useRoute()
 
 // Check if item is active
 const isItemActive = computed(() => {
-  if (props.item.isActive !== undefined) return props.item.isActive
+  if ((props.item as any).active !== undefined) return Boolean((props.item as any).active)
 
-  if (props.item.to) {
-    if (typeof props.item.to === 'string') {
-      return route.path === props.item.to || route.path.startsWith(props.item.to + '/')
+  const to = (props.item as any).to
+  if (to) {
+    if (typeof to === 'string') {
+      return route.path === to || route.path.startsWith(to + '/')
     }
-    if (typeof props.item.to === 'object' && props.item.to.path) {
-      return route.path === props.item.to.path || route.path.startsWith(props.item.to.path + '/')
+    if (typeof to === 'object' && to.path) {
+      return route.path === to.path || route.path.startsWith(to.path + '/')
     }
   }
 

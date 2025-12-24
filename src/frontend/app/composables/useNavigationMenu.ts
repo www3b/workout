@@ -1,47 +1,10 @@
 import type {RouteLocationRaw} from 'vue-router'
 import type {NavigationMenuItem} from '@nuxt/ui'
 
-// Extended interface for our custom features
-export interface ExtendedNavigationMenuItem {
-  id: string
-  label: string
-  title: string // Keep for backward compatibility
-  description?: string
-  icon?: string
-  badge?: string | number
-  badgeColor?: 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info'
-  to?: RouteLocationRaw
-  href?: string
-  target?: '_blank' | '_self' | '_parent' | '_top'
-  disabled?: boolean
-  external?: boolean
-  divider?: false
-  onClick?: () => void
-  isActive?: boolean
-  isVisible?: boolean
-  permissions?: string[]
-  roles?: string[]
-  children?: (ExtendedNavigationMenuItem | NavigationMenuDivider)[]
-  value?: string
-  type?: 'label' | 'trigger' | 'link'
-  defaultOpen?: boolean
-  open?: boolean
-  slot?: string
-  onSelect?: (e: Event) => void
-  class?: any
-  ui?: any
-  tooltip?: any
-  trailingIcon?: string
-  avatar?: any
-}
-
-export interface NavigationMenuDivider {
-  id: string
-  divider: true
-}
+type NavigationMenuItems = NavigationMenuItem[] | NavigationMenuItem[][]
 
 export interface NavigationMenuConfig {
-  items: (ExtendedNavigationMenuItem | NavigationMenuDivider)[]
+  items: NavigationMenuItems
   activeItemClass?: string
   inactiveItemClass?: string
   disabledItemClass?: string
@@ -56,11 +19,22 @@ export interface NavigationMenuConfig {
 export const useNavigationMenu = (config: NavigationMenuConfig) => {
   const router = useRouter()
   const route = useRoute()
-  const {user} = useAuth()
 
   const expandedItems = ref<Set<string>>(new Set())
   const activeItemId = ref<string>('')
   const isCollapsed = ref(config.defaultExpanded !== true)
+
+  const isGrouped = (items: NavigationMenuItems): items is NavigationMenuItem[][] => {
+    return Array.isArray(items[0])
+  }
+
+  const getItemKey = (item: NavigationMenuItem): string => {
+    return item.value || item.label || ''
+  }
+
+  const flattenItems = (items: NavigationMenuItems): NavigationMenuItem[] => {
+    return isGrouped(items) ? items.flat() : items
+  }
 
   // Filter items based on permissions and visibility
   const filteredItems = computed(() => {
@@ -69,76 +43,42 @@ export const useNavigationMenu = (config: NavigationMenuConfig) => {
 
   // Get current active item based on route
   const currentActiveItem = computed(() => {
-    return findActiveItem(filteredItems.value, route.path)
+    return findActiveItem(flattenItems(filteredItems.value), route.path)
   })
 
-  // Check if user has required permissions for item
-  const hasPermissions = (item: ExtendedNavigationMenuItem): boolean => {
-    if (!item.permissions?.length && !item.roles?.length) return true
-
-    const userPermissions = user.value?.permissions || []
-    const userRoles = user.value?.roles || []
-
-    const hasRequiredPermissions = !item.permissions?.length ||
-      item.permissions.some(permission => userPermissions.includes(permission))
-
-    const hasRequiredRoles = !item.roles?.length ||
-      item.roles.some(role => userRoles.includes(role))
-
-    return hasRequiredPermissions && hasRequiredRoles
-  }
-
   // Filter menu items recursively
-  const filterMenuItems = (items: (ExtendedNavigationMenuItem | NavigationMenuDivider)[]): (ExtendedNavigationMenuItem | NavigationMenuDivider)[] => {
+  const filterMenuItems = (items: NavigationMenuItems): NavigationMenuItems => {
+    if (isGrouped(items)) {
+      return items.map(group => filterMenuItems(group) as NavigationMenuItem[])
+    }
+
     return items
       .filter(item => {
-        // Always include dividers
-        if (item.divider) return true
-
-        // Check visibility for menu items
-        if (item.isVisible === false) return false
-        // Check permissions for menu items
-        if (!hasPermissions(item)) return false
+        // Consumers can control visibility by filtering before passing items.
         return true
       })
       .map(item => {
-        // Handle dividers
-        if (item.divider) return item
-
-        // Handle menu items with children
         return {
           ...item,
-          // Filter children recursively
-          children: item.children ? filterMenuItems(item.children) : undefined
+          children: item.children ? (filterMenuItems(item.children as NavigationMenuItem[]) as NavigationMenuItem[]) : undefined
         }
-      })
-      .filter(item => {
-        // Handle dividers
-        if (item.divider) return true
-
-        // Remove items with no visible children
-        if (item.children?.length === 0) return false
-        return true
       })
   }
 
   // Find active item based on current route
-  const findActiveItem = (items: (ExtendedNavigationMenuItem | NavigationMenuDivider)[], currentPath: string): ExtendedNavigationMenuItem | null => {
+  const findActiveItem = (items: NavigationMenuItem[], currentPath: string): NavigationMenuItem | null => {
     for (const item of items) {
-      // Skip dividers
-      if (item.divider) continue
-
       // Check if item matches current route
-      if (item.to && routesMatch(item.to, currentPath)) {
+      if ((item as any).to && routesMatch((item as any).to, currentPath)) {
         return item
       }
 
       // Check children recursively
       if (item.children) {
-        const activeChild = findActiveItem(item.children, currentPath)
+        const activeChild = findActiveItem(item.children as NavigationMenuItem[], currentPath)
         if (activeChild) {
           // Auto-expand parent if child is active
-          expandedItems.value.add(item.id)
+          if (item.value) expandedItems.value.add(getItemKey(item))
           return activeChild
         }
       }
@@ -170,7 +110,7 @@ export const useNavigationMenu = (config: NavigationMenuConfig) => {
 
   // Expand all items
   const expandAll = () => {
-    const allItemIds = getAllItemIds(filteredItems.value)
+    const allItemIds = getAllItemIds(flattenItems(filteredItems.value))
     expandedItems.value = new Set(allItemIds)
   }
 
@@ -180,66 +120,66 @@ export const useNavigationMenu = (config: NavigationMenuConfig) => {
   }
 
   // Get all item IDs recursively
-  const getAllItemIds = (items: (ExtendedNavigationMenuItem | NavigationMenuDivider)[]): string[] => {
+  const getAllItemIds = (items: NavigationMenuItem[]): string[] => {
     let ids: string[] = []
     for (const item of items) {
-      ids.push(item.id)
-      if (!item.divider && item.children) {
-        ids = ids.concat(getAllItemIds(item.children))
+      const key = getItemKey(item)
+      if (key) ids.push(key)
+      if (item.children) {
+        ids = ids.concat(getAllItemIds(item.children as NavigationMenuItem[]))
       }
     }
     return ids
   }
 
   // Handle item click
-  const handleItemClick = (item: ExtendedNavigationMenuItem) => {
+  const handleItemClick = (item: NavigationMenuItem) => {
     if (item.disabled) return
 
-    // Call custom onClick handler
-    if (item.onClick) {
-      item.onClick()
+    const anyItem = item as any
+
+    if (typeof anyItem.onClick === 'function') {
+      anyItem.onClick()
       return
     }
 
-    // Handle navigation
-    if (item.to) {
-      router.push(item.to)
-    } else if (item.href) {
-      if (item.external || item.target === '_blank') {
-        window.open(item.href, item.target || '_blank')
+    if (anyItem.to) {
+      router.push(anyItem.to as RouteLocationRaw)
+    } else if (anyItem.href) {
+      if (anyItem.external || anyItem.target === '_blank') {
+        window.open(anyItem.href, anyItem.target || '_blank')
       } else {
-        window.location.href = item.href
+        window.location.href = anyItem.href
       }
     }
 
-    // Toggle expansion if item has children
-    if (item.children?.length) {
-      toggleExpanded(item.id)
+    const itemKey = getItemKey(item)
+    if (item.children?.length && itemKey) {
+      toggleExpanded(itemKey)
     }
 
-    // Close menu on select if configured
     if (config.closeOnSelect) {
       isCollapsed.value = true
     }
   }
 
   // Check if item is active
-  const isItemActive = (item: ExtendedNavigationMenuItem): boolean => {
-    if (item.isActive !== undefined) return item.isActive
+  const isItemActive = (item: NavigationMenuItem): boolean => {
+    const anyItem = item as any
+    if (anyItem.active !== undefined) return Boolean(anyItem.active)
 
     const active = currentActiveItem.value
     if (!active) return false
 
-    return item.id === active.id || isChildActive(item, active)
+    return getItemKey(item) !== '' && getItemKey(item) === getItemKey(active) || isChildActive(item, active)
   }
 
   // Check if child is active
-  const isChildActive = (parent: ExtendedNavigationMenuItem, activeItem: ExtendedNavigationMenuItem): boolean => {
+  const isChildActive = (parent: NavigationMenuItem, activeItem: NavigationMenuItem): boolean => {
     if (!parent.children) return false
 
-    return parent.children.some(child => {
-      if (child.divider) return false
-      return child.id === activeItem.id || isChildActive(child, activeItem)
+    return (parent.children as NavigationMenuItem[]).some(child => {
+      return (getItemKey(child) !== '' && getItemKey(child) === getItemKey(activeItem)) || isChildActive(child, activeItem)
     })
   }
 
@@ -249,7 +189,7 @@ export const useNavigationMenu = (config: NavigationMenuConfig) => {
   }
 
   // Get CSS classes for menu item
-  const getItemClasses = (item: ExtendedNavigationMenuItem): Record<string, boolean> => {
+  const getItemClasses = (item: NavigationMenuItem): Record<string, boolean> => {
     return {
       [config.activeItemClass || '']: isItemActive(item),
       [config.inactiveItemClass || '']: !isItemActive(item),
@@ -258,31 +198,25 @@ export const useNavigationMenu = (config: NavigationMenuConfig) => {
   }
 
   // Search menu items
-  const searchItems = (query: string): (ExtendedNavigationMenuItem | NavigationMenuDivider)[] => {
-    if (!query.trim()) return filteredItems.value
+  const searchItems = (query: string): NavigationMenuItem[] => {
+    if (!query.trim()) return flattenItems(filteredItems.value)
 
-    return searchMenuItems(filteredItems.value, query.toLowerCase())
+    return searchMenuItems(flattenItems(filteredItems.value), query.toLowerCase())
   }
 
   // Search menu items recursively
-  const searchMenuItems = (items: (ExtendedNavigationMenuItem | NavigationMenuDivider)[], query: string): (ExtendedNavigationMenuItem | NavigationMenuDivider)[] => {
-    const results: (ExtendedNavigationMenuItem | NavigationMenuDivider)[] = []
+  const searchMenuItems = (items: NavigationMenuItem[], query: string): NavigationMenuItem[] => {
+    const results: NavigationMenuItem[] = []
 
     for (const item of items) {
-      // Always include dividers if there are matching items around them
-      if (item.divider) {
-        results.push(item)
-        continue
-      }
+      const labelMatch = item.label?.toLowerCase().includes(query) || false
+      const descriptionMatch = (item as any).description?.toLowerCase().includes(query)
+      const childrenMatch = item.children ? searchMenuItems(item.children as NavigationMenuItem[], query).length > 0 : false
 
-      const titleMatch = item.title.toLowerCase().includes(query)
-      const descriptionMatch = item.description?.toLowerCase().includes(query)
-      const childrenMatch = item.children ? searchMenuItems(item.children, query).length > 0 : false
-
-      if (titleMatch || descriptionMatch || childrenMatch) {
+      if (labelMatch || descriptionMatch || childrenMatch) {
         results.push({
           ...item,
-          children: childrenMatch && item.children ? searchMenuItems(item.children, query) : item.children
+          children: childrenMatch && item.children ? searchMenuItems(item.children as NavigationMenuItem[], query) : item.children
         })
       }
     }
@@ -290,26 +224,24 @@ export const useNavigationMenu = (config: NavigationMenuConfig) => {
     return results
   }
 
-
-  const getBreadcrumbTrail = (): ExtendedNavigationMenuItem[] => {
+  // Get breadcrumb trail
+  const getBreadcrumbTrail = (): NavigationMenuItem[] => {
     const active = currentActiveItem.value
     if (!active) return []
 
-    return findBreadcrumbTrail(filteredItems.value, active)
+    return findBreadcrumbTrail(flattenItems(filteredItems.value), active)
   }
 
-
-  const findBreadcrumbTrail = (items: (ExtendedNavigationMenuItem | NavigationMenuDivider)[], target: ExtendedNavigationMenuItem, trail: ExtendedNavigationMenuItem[] = []): ExtendedNavigationMenuItem[] => {
+  // Find breadcrumb trail
+  const findBreadcrumbTrail = (items: NavigationMenuItem[], target: NavigationMenuItem, trail: NavigationMenuItem[] = []): NavigationMenuItem[] => {
     for (const item of items) {
 
-      if (item.divider) continue
-
-      if (item.id === target.id) {
+      if (getItemKey(item) !== '' && getItemKey(item) === getItemKey(target)) {
         return [...trail, item]
       }
 
       if (item.children) {
-        const childTrail = findBreadcrumbTrail(item.children, target, [...trail, item])
+        const childTrail = findBreadcrumbTrail(item.children as NavigationMenuItem[], target, [...trail, item])
         if (childTrail.length > 0) {
           return childTrail
         }
@@ -319,48 +251,14 @@ export const useNavigationMenu = (config: NavigationMenuConfig) => {
     return []
   }
 
-
+  // Watch route changes
   watch(() => route.path, () => {
-    const active = findActiveItem(filteredItems.value, route.path)
-    activeItemId.value = active?.id || ''
+    const active = findActiveItem(flattenItems(filteredItems.value), route.path)
+    activeItemId.value = active ? getItemKey(active) : ''
   }, {immediate: true})
-
-
-  const toUINavigationItems = (items: (ExtendedNavigationMenuItem | NavigationMenuDivider)[]): NavigationMenuItem[] => {
-    return items
-
-      .map(item => {
-        const menuItem = item as ExtendedNavigationMenuItem
-        const uiItem: NavigationMenuItem = {
-          icon: menuItem.icon,
-          badge: menuItem.badge,
-          disabled: menuItem.disabled,
-          value: menuItem.id,
-          to: menuItem.to,
-          href: menuItem.href,
-          target: menuItem.target,
-          external: menuItem.external,
-          onClick: menuItem.onClick,
-          children: menuItem.children ? toUINavigationItems(menuItem.children) : undefined,
-          type: menuItem.type || 'link',
-          defaultOpen: menuItem.defaultOpen,
-          open: menuItem.open,
-          slot: menuItem.slot,
-          onSelect: menuItem.onSelect,
-          class: menuItem.class,
-          ui: menuItem.ui,
-          tooltip: menuItem.tooltip,
-          trailingIcon: menuItem.trailingIcon,
-          avatar: menuItem.avatar
-        }
-
-        return uiItem
-      })
-  }
 
   return {
     items: filteredItems,
-    uiItems: computed(() => toUINavigationItems(filteredItems.value)),
     activeItem: currentActiveItem,
     activeItemId: readonly(activeItemId),
     isCollapsed: readonly(isCollapsed),
@@ -375,7 +273,6 @@ export const useNavigationMenu = (config: NavigationMenuConfig) => {
     getItemClasses,
     searchItems,
     getBreadcrumbTrail,
-    hasPermissions,
 
     setCollapsed: (collapsed: boolean) => {
       isCollapsed.value = collapsed

@@ -8,7 +8,8 @@ export default defineNuxtConfig({
       '@nuxt/ui',
       '@nuxt/image',
       '@nuxt/hints',
-      'nuxt-auth-utils'
+      'nuxt-auth-utils',
+      '@pinia/nuxt'
     ],
 
     css: [

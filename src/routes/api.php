@@ -11,6 +11,8 @@ Route::post('/login', [AuthController::class, 'login'])->middleware([]);
 
 // Protected routes (require authentication)
 Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/auth/me', [AuthController::class, 'me']);
+
     // Users
     Route::get('/users', [UsersController::class, 'index']);
     // User profile

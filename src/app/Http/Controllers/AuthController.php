@@ -140,4 +140,23 @@ class AuthController extends Controller
             'message' => 'Password changed successfully. Please login again.',
         ]);
     }
+
+    /**
+     * Get authenticated user details along with roles and permissions
+     */
+    public function me(Request $request)
+    {
+        // dd(123);
+        $user = auth()->user();
+
+        return response()->json([
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ],
+            'roles' => $user->getRoleNames()->values(),
+            'permissions' => $user->getAllPermissions()->pluck('name')->values(),
+        ]);
+    }
 }

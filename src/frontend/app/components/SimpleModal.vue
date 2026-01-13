@@ -1,22 +1,20 @@
 <script setup lang="ts">
 type Props = {
-  isOpen: boolean,
-  title: string,
-}
+  isOpen: boolean;
+  title: string;
+};
 
 defineProps<Props>();
 </script>
 
 <template>
-  <UModal title="Modal with title">
-    <UButton label="Open" color="neutral" variant="subtle" />
+  <UModal :title="title" :is-open="isOpen">
+    <slot />
 
     <template #body>
-      <div class="h-48" />
+      <slot name="body" />
     </template>
   </UModal>
 </template>
 
-<style scoped>
-
-</style>
+<style scoped></style>

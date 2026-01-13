@@ -1,23 +1,24 @@
 <script setup lang="ts">
 definePageMeta({
-  middleware: "auth",
-});
+  middleware: 'auth',
+  layout: 'app',
+})
 
-const { user, loggedIn, logout, getProfile } = useAuth();
+const { user, loggedIn, logout, getProfile } = useAuth()
 const { user: abc } = useAuthStore();
 
 const refreshUserData = async () => {
   try {
-    await getProfile();
+    await getProfile()
   } catch (error) {
-    console.error("Failed to refresh user profile:", error);
+    console.error('Failed to refresh user profile:', error)
   }
-};
+}
 
 const handleLogout = async () => {
-  await logout();
-  await navigateTo("/login");
-};
+  await logout()
+  await navigateTo('/login')
+}
 </script>
 
 <template>
@@ -37,9 +38,7 @@ const handleLogout = async () => {
             <h2 class="text-lg font-semibold">Debug Info</h2>
           </template>
           <div class="space-y-2 text-sm">
-            <p>
-              <strong>User data:</strong> {{ JSON.stringify(user, null, 2) }}
-            </p>
+            <p><strong>User data:</strong> {{ JSON.stringify(user, null, 2) }}</p>
             <p><strong>Is authenticated:</strong> {{ loggedIn }}</p>
           </div>
         </UCard>
@@ -52,25 +51,16 @@ const handleLogout = async () => {
           <div class="space-y-4">
             <div>
               <p class="text-sm font-medium text-gray-500">Name</p>
-              <p class="text-lg text-white-900">
-                {{ user?.name || "No name" }}
-              </p>
+              <p class="text-lg text-white-900">{{ user?.name || 'No name' }}</p>
             </div>
             <div>
               <p class="text-sm font-medium text-gray-500">Email</p>
-              <p class="text-lg text-white-900">
-                {{ user?.email || "No email" }}
-              </p>
+              <p class="text-lg text-white-900">{{ user?.email || 'No email' }}</p>
             </div>
             <div v-if="!user" class="text-sm text-red-500">
               User data is not loaded. Click refresh to fetch.
             </div>
-            <UButton
-              @click="refreshUserData"
-              color="neutral"
-              variant="soft"
-              size="sm"
-            >
+            <UButton @click="refreshUserData" color="neutral" variant="soft" size="sm">
               Refresh User Data
             </UButton>
           </div>

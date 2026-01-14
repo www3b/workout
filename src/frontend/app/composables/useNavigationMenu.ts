@@ -184,8 +184,8 @@ export const useNavigationMenu = (config: NavigationMenuConfig) => {
   }
 
   // Check if item is expanded
-  const isItemExpanded = (itemId: string): boolean => {
-    return expandedItems.value.has(itemId)
+  const isItemExpanded = (itemId: string | undefined): boolean => {
+    return itemId ? expandedItems.value.has(itemId) : false
   }
 
   // Get CSS classes for menu item

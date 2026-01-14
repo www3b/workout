@@ -61,24 +61,6 @@ const columns: TableColumn<User>[] = [
     },
   },
 ];
-
-const addUser = async () => {
-  try {
-    const response = await $api("/users", {
-      method: "POST",
-      body: {
-        name: "John Doe",
-        email: "john.doe@example.com",
-        password: "password",
-        role: "user",
-      },
-    });
-
-    console.log(response);
-  } catch (e) {
-    console.log(e);
-  }
-};
 </script>
 
 <template>
@@ -87,7 +69,7 @@ const addUser = async () => {
       <UPageHeader title="Users" />
       <UPageBody>
         <UserModal>
-          <UButton @click="addUser" color="primary">Add User</UButton>
+          <UButton color="primary">Add User</UButton>
         </UserModal>
         <UTable :loading="pending" :columns="columns" :data="data?.users" />
       </UPageBody>

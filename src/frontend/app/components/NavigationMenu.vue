@@ -104,7 +104,7 @@ defineExpose({
     <template #item="{ item }">
       <UButton
         :variant="navigation.isItemActive(item) ? 'solid' : 'ghost'"
-        :color="navigation.isItemActive(item) ? 'primary' : 'gray'"
+        :color="navigation.isItemActive(item) ? 'primary' : 'neutral'"
         :disabled="item.disabled"
         :class="navigation.getItemClasses(item)"
         class="w-full justify-start"
@@ -118,7 +118,7 @@ defineExpose({
 
         <template v-if="item.badge && config.showBadges" #trailing>
           <UBadge
-            :label="typeof item.badge === 'number' && item.badge > 99 ? '99+' : item.badge"
+            :label="typeof item.badge === 'number' && item.badge > 99 ? '99+' : item.badge as string"
             size="xs"
           />
         </template>
@@ -133,7 +133,7 @@ defineExpose({
       </UButton>
     </template>
 
-    <template #submenu="{ item, level }">
+    <template #submenu="{ item }">
       <div
         v-if="item.children && navigation.isItemExpanded(item.value)"
         class="ml-4 mt-1 space-y-1"
@@ -143,7 +143,6 @@ defineExpose({
           v-for="child in item.children"
           :key="child.value"
           :item="child"
-          :level="level + 1"
           @click="navigation.handleItemClick(child)"
         />
       </div>

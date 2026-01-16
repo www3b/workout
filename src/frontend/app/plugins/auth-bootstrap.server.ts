@@ -14,9 +14,14 @@ export default defineNuxtPlugin(async () => {
     });
     // console.log('Fetched auth data:', data);
     auth.setAuth(data as any);
-  } catch (e) {
+  } catch (e: any) {
+    if (e?.status === 401 || e?.statusCode === 401) {
+      // Not authenticated; keep auth cleared without noisy logs.
+      auth.clearAuth();
+      return;
+    }
+
     console.log('Failed to fetch auth data:', e);
-    // если не авторизован — Laravel вернёт 401
     auth.clearAuth();
   }
 });

@@ -17,7 +17,9 @@ definePageMeta({
 
 const UButton = resolveComponent("UButton");
 
-const { data, pending } = useApiFetch<{ users: User[] }>("/users");
+const { $api } = useNuxtApp();
+const { data, pending, refresh } = useApiFetch<{ users: User[] }>("/users");
+const toast = useToast();
 
 const columns: TableColumn<User>[] = [
   {
@@ -41,25 +43,39 @@ const columns: TableColumn<User>[] = [
     accessorKey: "actions",
     header: "Actions",
     cell: ({ row }) => {
-      const userId = row.getValue("id");
+      const userId = row.getValue("id") as number;
 
       return [
         h(UButton, {
           color: "neutral",
           size: "xs",
           icon: "heroicons:pencil",
-          onClick: () => console.log("edit " + userId), // replace with real function
+          onClick: () => deleteUser(userId), // replace with real function
         }),
         h(UButton, {
           color: "error",
           size: "xs",
           icon: "heroicons:trash",
-          onClick: () => console.log("delete " + userId), // replace with real function
+          onClick: () => deleteUser(userId), // replace with real function
         }),
       ];
     },
   },
 ];
+
+async function deleteUser(userId: number) {
+  const response = await $api(`/users/${userId}`, {
+    method: "DELETE",
+  });
+
+  toast.add({
+    title: "Success",
+    description: `User with id #${userId} been deleted.`,
+    color: "success",
+  });
+
+  refresh();
+}
 </script>
 
 <template>
@@ -67,7 +83,7 @@ const columns: TableColumn<User>[] = [
     <UPage>
       <UPageHeader title="Users" />
       <UPageBody>
-        <UserModal>
+        <UserModal @created="refresh">
           <UButton color="primary">Add User</UButton>
         </UserModal>
         <UTable :loading="pending" :columns="columns" :data="data?.users" />

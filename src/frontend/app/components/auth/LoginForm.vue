@@ -1,3 +1,30 @@
+<script setup lang="ts">
+const { login, loading, error } = useAuth();
+
+const form = reactive({
+  email: "",
+  password: "",
+});
+
+const validate = (state: typeof form) => {
+  const errors = [];
+  if (!state.email)
+    errors.push({ path: "email", message: "Email is required" });
+  if (!state.password)
+    errors.push({ path: "password", message: "Password is required" });
+  return errors;
+};
+
+const handleSubmit = async () => {
+  try {
+    await login(form);
+    await navigateTo("/dashboard");
+  } catch {
+    // Error is handled by the useAuth composable
+  }
+};
+</script>
+
 <template>
   <div class="max-w-md mx-auto">
     <UCard>
@@ -24,12 +51,7 @@
           />
         </UFormField>
 
-        <UAlert
-          v-if="error"
-          color="red"
-          variant="soft"
-          class="mb-4"
-        >
+        <UAlert v-if="error" color="error" variant="soft" class="mb-4">
           {{ error }}
         </UAlert>
 
@@ -50,7 +72,10 @@
         <div class="text-center">
           <p class="text-sm text-gray-600">
             Don't have an account?
-            <NuxtLink to="/register" class="text-primary-600 hover:text-primary-700">
+            <NuxtLink
+              to="/register"
+              class="text-primary-600 hover:text-primary-700"
+            >
               Register here
             </NuxtLink>
           </p>
@@ -59,28 +84,3 @@
     </UCard>
   </div>
 </template>
-
-<script setup lang="ts">
-const { login, loading, error } = useAuth()
-
-const form = reactive({
-  email: '',
-  password: '',
-})
-
-const validate = (state: typeof form) => {
-  const errors = []
-  if (!state.email) errors.push({ path: 'email', message: 'Email is required' })
-  if (!state.password) errors.push({ path: 'password', message: 'Password is required' })
-  return errors
-}
-
-const handleSubmit = async () => {
-  try {
-    await login(form)
-    await navigateTo('/dashboard')
-  } catch {
-    // Error is handled by the useAuth composable
-  }
-}
-</script>

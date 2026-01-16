@@ -16,26 +16,6 @@ const exampleMenuItems = [
       label: 'CRM',
       icon: 'i-heroicons-users',
       to: '/crm',
-      children: [
-        {
-          label: 'Customers',
-          description: 'Customer list',
-          icon: 'i-heroicons-user-group',
-          to: '/crm/customers',
-        },
-        {
-          label: 'Leads',
-          description: 'Inbound leads',
-          icon: 'i-heroicons-clipboard-document-list',
-          to: '/crm/leads',
-        },
-        {
-          label: 'Opportunities',
-          description: 'Sales opportunities',
-          icon: 'i-heroicons-currency-dollar',
-          to: '/crm/opportunities',
-        }
-      ]
     },
     {
       value: 'users',
@@ -43,39 +23,32 @@ const exampleMenuItems = [
       icon: 'i-heroicons-chart-bar',
       to: '/crm/users',
     },
-    {
-      value: 'settings',
-      label: 'Settings',
-      icon: 'i-heroicons-cog-6-tooth',
-      children: [
-        {
-          label: 'Profile',
-          description: 'Personal settings',
-          icon: 'i-heroicons-user',
-          to: '/settings/profile'
-        },
-        {
-          label: 'Security',
-          description: 'Security settings',
-          icon: 'i-heroicons-shield-check',
-          to: '/settings/security'
-        },
-        {
-          label: 'Billing',
-          description: 'Billing portal',
-          icon: 'i-heroicons-credit-card',
-          to: 'https://billing.example.com',
-          target: '_blank'
-        }
-      ]
-    },
-    {
-      value: 'help',
-      label: 'Help & Support',
-      icon: 'i-heroicons-question-mark-circle',
-      to: 'https://support.example.com',
-      target: '_blank'
-    },
+    // {
+    //   value: 'settings',
+    //   label: 'Settings',
+    //   icon: 'i-heroicons-cog-6-tooth',
+    //   // children: [
+    //   //   {
+    //   //     label: 'Profile',
+    //   //     description: 'Personal settings',
+    //   //     icon: 'i-heroicons-user',
+    //   //     to: '/settings/profile'
+    //   //   },
+    //   //   {
+    //   //     label: 'Security',
+    //   //     description: 'Security settings',
+    //   //     icon: 'i-heroicons-shield-check',
+    //   //     to: '/settings/security'
+    //   //   },
+    //   //   {
+    //   //     label: 'Billing',
+    //   //     description: 'Billing portal',
+    //   //     icon: 'i-heroicons-credit-card',
+    //   //     to: 'https://billing.example.com',
+    //   //     target: '_blank'
+    //   //   }
+    //   // ]
+    // },
   ],
   [
     {

@@ -18,10 +18,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // User profile
     Route::get('/user', [AuthController::class, 'profile']);
     Route::put('/user', [AuthController::class, 'updateProfile']);
-//    Route::post('/user', [AuthController::class, 'updateProfile']);
+//    Route::post('/user', [AuthController::class, 'createProfile']);
     Route::post('/user/change-password', [AuthController::class, 'changePassword']);
 
     // Logout
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/logout-all', [AuthController::class, 'logoutAll']);
+
+    // Users management
+    Route::post('/users', [UsersController::class, 'store']);
+    Route::delete('/users/{id}', [UsersController::class, 'destroy']);
 });

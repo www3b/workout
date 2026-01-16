@@ -19,6 +19,7 @@ const state = reactive<Partial<Schema>>({
 });
 
 const toast = useToast();
+const { $api } = useNuxtApp();
 
 async function onSubmit(event: FormSubmitEvent<Schema>) {
   toast.add({
@@ -26,7 +27,12 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     description: "The form has been submitted.",
     color: "success",
   });
-  console.log(event.data);
+  const response = await $api("/users", {
+    method: "POST",
+    body: event.data,
+  });
+
+  console.log("User created:", response);
 }
 </script>
 

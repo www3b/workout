@@ -17,7 +17,6 @@ definePageMeta({
 
 const UButton = resolveComponent("UButton");
 
-const { $api } = useNuxtApp();
 const { data, pending } = useApiFetch<{ users: User[] }>("/users");
 
 const columns: TableColumn<User>[] = [

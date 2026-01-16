@@ -47,12 +47,15 @@ const columns: TableColumn<User>[] = [
 
       return [
         h(UButton, {
+          class: "mx-1",
           color: "neutral",
           size: "xs",
           icon: "heroicons:pencil",
+          disabled: true,
           onClick: () => deleteUser(userId), // replace with real function
         }),
         h(UButton, {
+          class: "mx-1",
           color: "error",
           size: "xs",
           icon: "heroicons:trash",
